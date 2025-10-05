@@ -5,7 +5,8 @@ import boto3
 SSM = boto3.client("ssm")
 PUSH_URL = "https://api.pushover.net/1/messages.json"
 
-CHECK_URL     = os.environ["CHECK_URL"]            # e.g. https://plex.christiankaczmarek.com/identity
+# Configuration from Lambda environment variables
+CHECK_URL     = os.environ["CHECK_URL"]
 STATUS_PARAM  = os.environ.get("STATUS_PARAM", "/homelab/plex_remote_status")
 PUSH_TOKEN    = os.environ["PUSHOVER_TOKEN"]
 PUSH_USER     = os.environ["PUSHOVER_USER"]
