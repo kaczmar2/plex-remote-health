@@ -1,6 +1,10 @@
-import os, time, urllib.request, urllib.parse, json
+import os, time, urllib.request, urllib.parse, json, logging
 from urllib.error import URLError, HTTPError
 import boto3
+
+# Configure structured logging for CloudWatch
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 SSM = boto3.client("ssm")
 PUSH_URL = "https://api.pushover.net/1/messages.json"
@@ -46,6 +50,15 @@ def probe():
 def handler(event, context):
     current, http_code = probe()
     prev = get_prev_status()
+
+    # Log status for CloudWatch metrics/dashboard (always log, not just on changes)
+    logger.info(json.dumps({
+        "status": current,
+        "http_code": http_code,
+        "status_changed": current != prev,
+        "previous_status": prev
+    }))
+
     if current != prev:
         if current == "down":
             pushover("Plex remote health: DOWN",
