@@ -39,12 +39,19 @@ def pushover(title, message, priority=0):
 def probe():
     try:
         req = urllib.request.Request(CHECK_URL, headers={"User-Agent": "plex-remote-health"})
-        with urllib.request.urlopen(req, timeout=10) as r:
+        # Reduced timeout to 8s to ensure completion before Lambda timeout
+        with urllib.request.urlopen(req, timeout=8) as r:
             code = r.getcode()
             body = r.read(4096).decode("utf-8", "ignore")
             ok = (code == 200) and ("machineIdentifier=" in body)
             return ("up" if ok else "down"), code
-    except (HTTPError, URLError, TimeoutError):
+    except (HTTPError, URLError, TimeoutError, OSError) as e:
+        # OSError catches DNS resolution failures and connection errors
+        logger.warning(f"Probe failed: {type(e).__name__}: {str(e)}")
+        return "down", 0
+    except Exception as e:
+        # Catch-all for unexpected errors to prevent Lambda timeout
+        logger.error(f"Unexpected probe error: {type(e).__name__}: {str(e)}")
         return "down", 0
 
 def handler(event, context):
